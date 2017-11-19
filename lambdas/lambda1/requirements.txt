@@ -1,2 +1,2 @@
 pymysql==0.7.11
-ssdeep=3.2
+ssdeep==3.2
