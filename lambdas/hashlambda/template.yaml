@@ -5,7 +5,7 @@ Resources:
   hashProcessor:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: lambda.zip
+      CodeUri: hashlambda.zip
       Handler: hashCompute.lambda_handler
       Runtime: python2.7
       Timeout: 300

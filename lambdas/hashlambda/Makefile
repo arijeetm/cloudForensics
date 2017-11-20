@@ -10,14 +10,13 @@ export PATH := var:$(PATH):$(VENV_DIR)/bin
 
 PYTHON := $(shell /usr/bin/which python$(PY_VERSION))
 VIRTUALENV := $(PYTHON) -m virtualenv
-ZIP_FILE := $(BASE)/lambda.zip
+ZIP_FILE := $(BASE)/hashlambda.zip
 
 .DEFAULT_GOAL := build
 .PHONY: build clean bundle test
 
 
 build:
-	export BUILD_LIB=1
 	$(VIRTUALENV) "$(VENV_DIR)"
 	"$(VENV_DIR)/bin/pip$(PY_VERSION)" \
 		--isolated \
@@ -26,7 +25,6 @@ build:
 		
 bundle:
 	zip -r -9 "$(ZIP_FILE)" *.py
-	cd "$(LIB_DIR)" && zip -r9 "$(ZIP_FILE)" . 
 	cd "$(VENV_DIR)/lib/python$(PY_VERSION)/site-packages" \
 		&& zip -r9 "$(ZIP_FILE)" .
 
