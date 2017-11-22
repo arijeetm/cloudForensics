@@ -6,17 +6,17 @@ from md5checker import make_hash
 hostname= '54.241.144.63'
 username='ubuntu'
 password='insure'
-database='hashdb'
+database='FHR'
 dstbucket= 'insure-bloom'
 pwd= '/tmp/'
+threshold = 5 # infected files with probability more than 5% are thrown out of our pipeline
 
 def isBadHash(md5, sha1):
     try:
         conn = pymysql.connect(host=hostname, user=username, passwd=password, db=database)
         cur = conn.cursor()
-        cur.execute("SELECT status from hashtables where md5='" + md5 +"' and sha1='" + sha1 + "'")
-        print cur.fetchall()
-        return cur.fetchall() == 'BAD'
+        cur.execute("SELECT status from File where md5='" + md5 +"' and sha1='" + sha1 + "' and certainty>="+ threshold)
+        return cur.fetchall() != 'GOOD'
     except Exception as e:
         print ('Error occurred while connecting to database {}'.format(hostname))
         raise e
@@ -42,7 +42,9 @@ def lambda_handler(event, context):
         print ('Error occurred while computing hash of the file {}', key)
         raise e
 
-    if isBadHash(md5hash, sha1)== False:
+    if isBadHash(md5hash, sha1)== False: # GOOD files are passed along
         boto3.client('s3').copy_object(Bucket=dstbucket, CopySource={'Bucket': bucket, 'Key': key},
                        Key=key)
+    # else --log the bad files encountered maybe maintain count, timestamp in some log file or db
+    # but donot know where to persist the file -- TO DO
 

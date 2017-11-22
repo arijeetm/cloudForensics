@@ -4,12 +4,11 @@ import pymysql
 from md5checker import make_hash
 import yara
 import time, datetime
-import pkg_resources as pkg
 
-hostname= '13.57.36.4' # note to update db hostname
+hostname= '52.53.232.186' # update db hostname
 username='ubuntu'
 password='insure'
-database='hashdb'
+database='FHR'
 
 s3= boto3.resource('s3')
 toolbucket= s3.Bucket('insure-tools')
@@ -23,13 +22,14 @@ def insertTodb(file):
     except Exception as e:
         print ('Error occurred while computing hash of the file {}', file)
         raise e
-
+    print ('inserting hash ' + md5hash)
     insert_stmt = (
-        "INSERT INTO testhashtables(sha1, md5, status, date)  "
-        "VALUES (%s, %s, %s, %s)"
+        "INSERT INTO File(sha1, md5, status, date, certainty)  "
+        "VALUES (%s, %s, %s, %s, %s)"
     )
-    currtime = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    data = (sha1, md5hash, 'BAD', currtime)
+    currtime = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d')
+    accuracy = 100 # giving high bias to feedback to evolve db and make it faster wit time and volume
+    data = (sha1, md5hash, 'BAD', currtime, accuracy) # BAD is special keyword for suspicious or malware file from feedback
     try:
         conn = pymysql.connect(host=hostname, user=username, passwd=password, db=database)
         cur = conn.cursor()
@@ -47,13 +47,11 @@ def lambda_handler(event, context):
     srcbucket = s3.Bucket(bucket)
     key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key'].encode('utf8'))
     try:
-        #toolbucket.download_file(rule_file, pwd+ rule_file)
-        
+        toolbucket.download_file(rule_file, pwd+ rule_file)
         rules= yara.load(pwd+ rule_file)
     except Exception as e:
         print(
-            'Error getting rules from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(
-             bucket))
+            'Error getting rules from bucket. Make sure they exist and your bucket is in the same region as this function.')
         raise e
 
     try:
@@ -66,5 +64,7 @@ def lambda_handler(event, context):
         raise e
 
     # if known bad file add to db for pruning
-    if len(m) > 0:
-        insertTodb(pwd+ key)
+    #if len(m) > 0:
+    insertTodb(pwd+ key)
+    boto3.client('s3').delete_object(Bucket=bucket, Key=key)
+
