@@ -1,6 +1,7 @@
 from glob import glob
 import pymysql
 import time, datetime
+import multiprocessing as mp
 
 hostname= '52.53.216.88' # update db hostname
 username='ubuntu'
@@ -27,21 +28,23 @@ def insertDB(size, fn, hash):
     finally:
         conn.close()
 
+def run(file):
+    with open(file, 'r') as inf:
+        lines = [line.rstrip('\n') for line in inf]
+        if (len(lines) > 0): lines.pop(0)
+        for line in lines:
+            size = line.split(':')[0]
+            fname = line.split(',')[1]
+            hash = line[len(size) + 1: -len(fname) - 1]
+            insertDB(size, fname, hash)
+
 def main():
     data_directories = glob(WORKING_DIRECTORY)
     for dir in data_directories:
         print ('Looking dir into ' + dir)
         filesnames= glob(dir + '/*.ssd')
-        for file in filesnames:
-            print ('Looking file into ' + file)
-            with open(file, 'r') as inf:
-                lines = [line.rstrip('\n') for line in inf]
-                lines.pop(0)
-                for line in lines:
-                    size = line.split(':')[0]
-                    fname = line.split(',')[1]
-                    hash = line[len(size)+1: -len(fname)-1]
-                    insertDB(size, fname, hash)
+        p = mp.Pool(processes=mp.cpu_count())  # creates a pool on the core counts
+        p.map(run, filesnames)  # run the upload job in parallel across each core
 
 if __name__ == '__main__':
     main()
