@@ -10,6 +10,7 @@ database='FHR'
 dstbucket= 'insure-bloom'
 pwd= '/tmp/'
 threshold = 5 # infected files with probability more than 5% are thrown out of our pipeline
+s3_client= boto3.client('s3')
 
 def isBadHash(md5, sha1):
     try:
@@ -43,8 +44,7 @@ def lambda_handler(event, context):
         raise e
 
     if isBadHash(md5hash, sha1)== False: # GOOD files are passed along
-        boto3.client('s3').copy_object(Bucket=dstbucket, CopySource={'Bucket': bucket, 'Key': key},
+        s3_client.copy_object(Bucket=dstbucket, CopySource={'Bucket': bucket, 'Key': key},
                        Key=key)
-    # else --log the bad files encountered maybe maintain count, timestamp in some log file or db
-    # but donot know where to persist the file -- TO DO
+        s3_client.delete_object(Bucket=bucket, Key=key)
 

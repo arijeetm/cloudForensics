@@ -12,8 +12,10 @@ database='FHR'
 
 s3= boto3.resource('s3')
 toolbucket= s3.Bucket('insure-tools')
+dstbucket= 'insure-filtered'
 rule_file='compiled_rules'
 pwd= '/tmp/'
+s3_client= boto3.client('s3')
 
 def insertTodb(file):
     try:
@@ -64,7 +66,10 @@ def lambda_handler(event, context):
         raise e
 
     # if known bad file add to db for pruning
-    #if len(m) > 0:
-    insertTodb(pwd+ key)
-    boto3.client('s3').delete_object(Bucket=bucket, Key=key)
+    if len(m) > 0:
+        insertTodb(pwd+ key)
+    else:
+        s3_client.copy_object(Bucket=dstbucket, CopySource={'Bucket': bucket, 'Key': key},
+                              Key=key)
+        s3_client.delete_object(Bucket=bucket, Key=key)
 
