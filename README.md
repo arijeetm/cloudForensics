@@ -6,6 +6,6 @@ There are separate tables for md5, sha1 hash and fuzzy hashes in this architectu
   
 
 # Usage
-	a. run 'make clean build' in lambdas folder  
-	b. run 'make build'  
-	c. Upload the corresponding zip file to lambdas function in AWS and enable the trigger on the s3 bucket  
+	run 'make clean build' in lambdas folder  
+	run 'make build'  
+	Upload the corresponding zip file to lambdas function in AWS and enable the trigger on the s3 bucket  
